@@ -21,18 +21,18 @@ function activate(context) {
     // 	}
     // });
     let disposable = vscode.commands.registerCommand('helloworld.world', () => {
-        let message;
+        // let message;
         let wf, f;
         if (vscode.workspace.workspaceFolders !== undefined) {
             wf = vscode.workspace.workspaceFolders[0].uri.path;
             f = vscode.workspace.workspaceFolders[0].uri.fsPath;
-            message = `YOUR-EXTENSION: folder: ${wf} - ${f}`;
-            // vscode.window.showInformationMessage(message);
-        }
-        else {
-            message = "YOUR-EXTENSION: Working folder not found, open a folder an try again";
-            vscode.window.showErrorMessage(message);
-            // TODO stop function
+            // 	message = `YOUR-EXTENSION: folder: ${wf} - ${f}`;
+            // 	// vscode.window.showInformationMessage(message);
+            // }
+            // else {
+            // 	message = "YOUR-EXTENSION: Working folder not found, open a folder an try again";
+            // 	vscode.window.showErrorMessage(message);
+            // 	// TODO stop function
         }
         var editor = vscode.window.activeTextEditor;
         if (editor) {
@@ -46,6 +46,43 @@ function activate(context) {
             // TODO: bug with isHTML
             const INDEX_OF_HREF_FIRST_QUOTATION = 5;
             if (isHTML) {
+                const text = document.getText();
+                // Get all stylesheets
+                let cssFiles = [];
+                let indexCSS = text.indexOf("href=");
+                while (indexCSS !== -1) {
+                    let subText = text.substring(indexCSS);
+                    let quotation = subText.charAt(INDEX_OF_HREF_FIRST_QUOTATION);
+                    let end;
+                    if (quotation === `"`) {
+                        end = subText.indexOf(`"`, INDEX_OF_HREF_FIRST_QUOTATION + 1);
+                    }
+                    else {
+                        end = subText.indexOf(`'`, INDEX_OF_HREF_FIRST_QUOTATION + 1);
+                    }
+                    indexCSS = text.indexOf("href=", indexCSS + 1);
+                    let cssFile = subText.substring(0, end + 1);
+                    cssFiles.push(cssFile);
+                }
+                // Get all class or id names
+                const INDEX_OF_CLASS_FIRST_QUOTATION = 6;
+                const INDEX_OF_ID_FIRST_QUOTATION = 3;
+                let classTags = [];
+                let idTags = [];
+                classTags = getAttributes("class", text);
+                idTags = getAttributes("id", text);
+                vscode.window.showInformationMessage(`${classTags} classTags`);
+                vscode.window.showInformationMessage(`${idTags} idTags`);
+                // Check if class name exists in any stylesheets
+                // TODO : ^
+                var newClasses = [];
+                var newIds = [];
+                // 1) Get uri's from css files
+                // 2) For each css file, get text
+                // 3) For each class/id, check if text contains class/id, then add to newClasses/newId
+                //    else don't add
+                // 4) repeat to step 2)
+                // Get selected css file
                 let index = word.indexOf("href=");
                 let subWord = word.substring(index);
                 let quotation = subWord.charAt(INDEX_OF_HREF_FIRST_QUOTATION);
@@ -57,79 +94,21 @@ function activate(context) {
                     end = subWord.indexOf(`'`, INDEX_OF_HREF_FIRST_QUOTATION + 1);
                 }
                 subWord = subWord.substring(0, end).replace(/href=["']|["']/, '');
-                var uri = vscode.Uri.file(`${f}/` + subWord);
-                // vscode.window.showInformationMessage(`${uri} uri`);
-                // vscode.window.showInformationMessage(`${uri.path} uri`);
-                // vscode.workspace.openTextDocument(uri.path);
-                vscode.window.showInformationMessage(`${editor} document`);
-                const document = editor.document;
-                editor.edit(editBuilder => {
-                    editor.selections.forEach(sel => {
-                        // const range = sel.isEmpty ? document.getWordRangeAtPosition(sel.start) || sel : sel;
-                        let word = document.getText();
-                        vscode.window.showErrorMessage(word);
-                        let reversed = word.split('').reverse().join('');
-                        // editBuilder.replace(range, reversed);
+                var uri = vscode.Uri.file(`${wf}/` + subWord);
+                if (uri !== undefined) {
+                    var setting = vscode.Uri.parse(`${wf}/` + subWord);
+                    vscode.workspace.openTextDocument(setting).then((a) => {
+                        vscode.window.showTextDocument(a, 1, false).then(e => {
+                            e.edit(edit => {
+                                edit.insert(new vscode.Position(e.document.lineCount, 0), "\n\nYour advertisement here");
+                            });
+                        });
+                    }, (error) => {
+                        console.error(error);
+                        debugger;
                     });
-                }); // apply the (accumulated) replacement(s) (if multiple cursors/selections)
-            }
-            /*
-            const text = document.getText();
-            // vscode.window.showInformationMessage(`${text} text`);
-
-            // Get all stylesheets
-
-            let cssFiles = [];
-            let indexCSS = text.indexOf("href=");
-
-            while (indexCSS !== -1) {
-                let subText = text.substring(indexCSS);
-                let quotation = subText.charAt(INDEX_OF_HREF_FIRST_QUOTATION);
-                let end;
-                if (quotation === `"`) {
-                    end = subText.indexOf(`"`, INDEX_OF_HREF_FIRST_QUOTATION + 1);
-                } else {
-                    end = subText.indexOf(`'`, INDEX_OF_HREF_FIRST_QUOTATION + 1);
                 }
-                indexCSS = text.indexOf("href=", indexCSS + 1);
-
-                let cssFile = subText.substring(0, end + 1);//.replace(/href=["']|["']/, '');
-                cssFiles.push(cssFile);
             }
-
-            // vscode.window.showInformationMessage(`${cssFiles} cssFiles`);
-
-            // Get all class or id names
-            const INDEX_OF_CLASS_FIRST_QUOTATION = 6;
-            const INDEX_OF_ID_FIRST_QUOTATION = 3;
-            let classTags = [];
-            let idTags = [];
-
-            // while (index !== -1) {
-            // 	let subText = text.substring(index);
-            // 	let classTag;
-            // 	if (subText.includes("class=")) {
-            // 		let quotation = subText.charAt(INDEX_OF_CLASS_FIRST_QUOTATION);
-            // 		let end;
-            // 		if (quotation === `"`) {
-            // 			end = subText.indexOf(`"`, INDEX_OF_CLASS_FIRST_QUOTATION + 1);
-            // 		} else {
-            // 			end = subText.indexOf(`'`, INDEX_OF_CLASS_FIRST_QUOTATION + 1);
-            // 		}
-            // 		index = text.indexOf("class=", index + 1);
-            // 		classTag = subText.substring(0, end + 1);//.replace(/class=["']|["']/, '');
-            // 	}
-            // 	classTags.push(classTag);
-            // }
-            // vscode.window.showInformationMessage(`${classTags} classTags`);
-            classTags = getAttributes("class", text);
-            idTags = getAttributes("id", text);
-            vscode.window.showInformationMessage(`${classTags} classTags`);
-
-            vscode.window.showInformationMessage(`${idTags} idTags`);
-            // Check if class name exists in any stylesheets
-
-            */
         }
     });
     context.subscriptions.push(disposable);
